@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:clipboard_sync/logic/clipboard/clipboard.dart';
 import 'package:clipboard_sync/logic/network/network.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -10,8 +11,13 @@ class App extends HookWidget {
   @override
   Widget build(BuildContext context) {
     final socketStream = useMemoized(() => initializeNetwork(), []);
-    useEffect(() => () => socketStream.value.forEach((element) => element.close()), []);
-    useEffect(() => () => socketStream.close(), []);
+    useEffect(() {
+      initializeClipboard();
+      return () {
+        socketStream.value.forEach((element) => element.close());
+        socketStream.close();
+      };
+    }, []);
 
     final control = useTextEditingController();
 

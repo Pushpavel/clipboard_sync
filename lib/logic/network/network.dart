@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:clipboard_sync/logic/models/discoveryMessages.dart';
 import 'package:clipboard_sync/logic/models/info.dart';
+import 'package:clipboard_sync/logic/network/client.dart';
 import 'package:clipboard_sync/logic/utils/uuid.dart';
 import 'package:rxdart/rxdart.dart';
 
@@ -28,6 +29,7 @@ _initializeNetwork(BehaviorSubject<List<Socket>> socketStream) async {
     list.add(socket);
     socketStream.value = list;
     _removeSocketOnClose(socket, socketStream);
+    handleClient(socket);
   });
 
   _handleServerSearchers(deviceInfo, serverSocket);
@@ -103,6 +105,7 @@ _handleServerConnections(RawDatagramSocket udpSocket, BehaviorSubject<List<Socke
         _removeSocketOnClose(socket, socketStream);
         list.add(socket);
         socketStream.value = list;
+        handleClient(socket);
       } catch (e) {
         print(e);
       }

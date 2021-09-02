@@ -1,11 +1,25 @@
 import 'dart:convert';
 
-class ClipboardMessage {
-  final String originId;
-  final String originName;
+class ClipboardValue {
   final String value;
+  final DateTime timestamp;
 
-  ClipboardMessage(this.originId, this.originName, this.value);
+  ClipboardValue(this.value, this.timestamp);
+}
+
+String encodeClipboardValue(ClipboardValue value) {
+  final json = {
+    "type": "ClipboardValue",
+    "value": value.value,
+    "timestamp": value.timestamp.millisecondsSinceEpoch,
+  };
+
+  return jsonEncode(json);
+}
+
+ClipboardValue decodeClipboardValue(String jsonString) {
+  final json = getJsonMessage("ClipboardValue", utf8.encode(jsonString));
+  return ClipboardValue(json['value'], DateTime.fromMillisecondsSinceEpoch(json['timestamp']));
 }
 
 getJsonMessage(String type, List<int> bytes) {
