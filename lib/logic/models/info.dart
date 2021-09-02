@@ -1,6 +1,6 @@
 class DeviceInfo {
   final String id;
   final String name;
-
-  DeviceInfo(this.id, this.name);
+  final bool isPhysicalDevice;
+  DeviceInfo(this.id, this.name, this.isPhysicalDevice);
 }

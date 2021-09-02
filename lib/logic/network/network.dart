@@ -19,11 +19,6 @@ BehaviorSubject<List<Socket>> initializeNetwork() {
 }
 
 _initializeNetwork(BehaviorSubject<List<Socket>> socketStream) async {
-  final l = await NetworkInterface.list(type: InternetAddressType.IPv4);
-  l.forEach((element) {
-    print(element.addresses[0].address);
-  });
-
   final deviceInfo = await getDeviceInfo();
   if (deviceInfo == null) throw Exception("DeviceInfo: unique id of device cannot be determined");
   final serverSocket = await ServerSocket.bind(InternetAddress.anyIPv4, SERVER_PORT);
@@ -32,6 +27,7 @@ _initializeNetwork(BehaviorSubject<List<Socket>> socketStream) async {
     final list = socketStream.value.toList();
     list.add(socket);
     socketStream.value = list;
+    _removeSocketOnClose(socket, socketStream);
   });
 
   _handleServerSearchers(deviceInfo, serverSocket);
@@ -50,9 +46,10 @@ _handleServerSearchers(DeviceInfo deviceInfo, ServerSocket serverSocket) async {
     final datagram = socket.receive()!;
     final id = decodeDeviceId(datagram.data);
 
-    if (id.compareTo(deviceInfo.id) <= 0) return;
-
     print(id);
+
+    if (id.compareTo(deviceInfo.id) <= 0 &&
+        !(datagram.address.address == '127.0.0.1' && id != deviceInfo.id && deviceInfo.isPhysicalDevice)) return;
 
     final serverInfo = await encodeServerInfoMessage(serverSocket);
     socket.send(serverInfo, datagram.address, datagram.port);
@@ -82,6 +79,7 @@ _searchServer(DeviceInfo deviceInfo, BehaviorSubject<List<Socket>> socketStream)
     await Future.delayed(SEARCH_INTERVAL);
     final deviceId = encodeDeviceId(deviceInfo.id);
     socket?.send(deviceId, InternetAddress(BROADCAST_ADDRESS), SEARCH_PORT);
+    if (!deviceInfo.isPhysicalDevice) socket?.send(deviceId, InternetAddress("10.0.2.2"), SEARCH_PORT);
   }
 }
 
@@ -90,7 +88,8 @@ _handleServerConnections(RawDatagramSocket udpSocket, BehaviorSubject<List<Socke
     if (event != RawSocketEvent.read) return;
     final datagram = udpSocket.receive()!;
     final serverMessage = decodeServerInfoMessage(datagram.data);
-    for (final address in serverMessage.addresses) {
+    final addresses = serverMessage.addresses.toList();
+    for (final address in addresses) {
       try {
         if (socketStream.value.isNotEmpty) return;
         final socket = await Socket.connect(address, serverMessage.port);
@@ -114,6 +113,7 @@ _handleServerConnections(RawDatagramSocket udpSocket, BehaviorSubject<List<Socke
 _removeSocketOnClose(Socket socket, BehaviorSubject<List<Socket>> socketStream) async {
   try {
     await socket.done;
+    print("disconnected ${socket.address.address}");
   } finally {
     final list = socketStream.value.toList();
     list.remove(socket);

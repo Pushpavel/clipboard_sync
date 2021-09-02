@@ -10,6 +10,7 @@ class App extends HookWidget {
   @override
   Widget build(BuildContext context) {
     final socketStream = useMemoized(() => initializeNetwork(), []);
+    useEffect(() => () => socketStream.value.forEach((element) => element.close()), []);
     useEffect(() => () => socketStream.close(), []);
 
     return Scaffold(
@@ -21,10 +22,18 @@ class App extends HookWidget {
             if (!snapshot.hasData || snapshot.requireData.isEmpty) return Loader();
 
             return Wrap(
+              alignment: WrapAlignment.center,
+              direction: Axis.vertical,
               children: [
-                Icon(Icons.check),
-                SizedBox(width: 8),
-                Text("Connected"),
+                Wrap(
+                  children: [
+                    Icon(Icons.check),
+                    SizedBox(width: 8),
+                    Text("Connected"),
+                  ],
+                ),
+                SizedBox(height: 18),
+                ...snapshot.requireData.map((e) => Text(e.address.address)),
               ],
             );
           },

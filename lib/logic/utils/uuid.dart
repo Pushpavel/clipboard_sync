@@ -10,22 +10,22 @@ Future<DeviceInfo?> getDeviceInfo() async {
     final info = await p.androidInfo;
     if (info.androidId == null) return null;
     return DeviceInfo(
-        info.androidId!, info.host ?? info.model ?? info.product ?? info.hardware ?? info.board ?? "Android Phone");
+      info.androidId!,
+      info.host ?? info.model ?? info.product ?? info.hardware ?? info.board ?? "Android Phone",
+      info.isPhysicalDevice ?? false,
+    );
   }
 
   if (Platform.isLinux) {
     final info = await p.linuxInfo;
     if (info.machineId == null) return null;
-    return DeviceInfo(info.machineId!, info.prettyName);
+    return DeviceInfo(info.machineId!, info.prettyName, true);
   }
 
   if (Platform.isWindows) {
     final info = await p.windowsInfo;
-    return DeviceInfo(
-            info.computerName +
-            info.systemMemoryInMegabytes.toString() +
-            info.numberOfCores.toString(),
-        info.computerName);
+    return DeviceInfo(info.computerName + info.systemMemoryInMegabytes.toString() + info.numberOfCores.toString(),
+        info.computerName, true);
   }
 
   return null;
