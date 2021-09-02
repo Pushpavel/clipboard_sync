@@ -4,8 +4,7 @@ import 'dart:io';
 import 'package:clipboard_sync/logic/models/discoveryMessages.dart';
 import 'package:clipboard_sync/logic/models/info.dart';
 import 'package:clipboard_sync/logic/utils/uuid.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
+import 'package:rxdart/rxdart.dart';
 
 const SERVER_PORT = 10542;
 const SEARCH_PORT = 38899;
@@ -13,22 +12,30 @@ const SEARCH_SOURCE_PORT = 40000;
 const SEARCH_INTERVAL = const Duration(seconds: 1);
 const BROADCAST_ADDRESS = "255.255.255.255";
 
-Future<ValueNotifier<Set<Socket>>> initializeNetwork() async {
-  final socketStream = ValueNotifier(Set<Socket>.from([]));
+BehaviorSubject<List<Socket>> initializeNetwork() {
+  final socketStream = BehaviorSubject<List<Socket>>.seeded([]);
+  _initializeNetwork(socketStream);
+  return socketStream;
+}
+
+_initializeNetwork(BehaviorSubject<List<Socket>> socketStream) async {
+  final l = await NetworkInterface.list(type: InternetAddressType.IPv4);
+  l.forEach((element) {
+    print(element.addresses[0].address);
+  });
 
   final deviceInfo = await getDeviceInfo();
   if (deviceInfo == null) throw Exception("DeviceInfo: unique id of device cannot be determined");
   final serverSocket = await ServerSocket.bind(InternetAddress.anyIPv4, SERVER_PORT);
 
   serverSocket.listen((socket) {
-    final list = socketStream.value.toSet();
+    final list = socketStream.value.toList();
     list.add(socket);
     socketStream.value = list;
   });
 
   _handleServerSearchers(deviceInfo, serverSocket);
   _searchServer(deviceInfo, socketStream);
-  return socketStream;
 }
 
 _handleServerSearchers(DeviceInfo deviceInfo, ServerSocket serverSocket) async {
@@ -52,11 +59,10 @@ _handleServerSearchers(DeviceInfo deviceInfo, ServerSocket serverSocket) async {
   });
 }
 
-_searchServer(DeviceInfo deviceInfo, ValueNotifier<Set<Socket>> socketStream) async {
+_searchServer(DeviceInfo deviceInfo, BehaviorSubject<List<Socket>> socketStream) async {
   RawDatagramSocket? socket;
-  manageSocket() async {
-    final devices = socketStream.value;
-    if (devices.isNotEmpty) {
+  manageSocket(List<Socket> sockets) async {
+    if (sockets.isNotEmpty) {
       socket?.close();
       socket = null;
     } else if (socket == null) {
@@ -70,8 +76,7 @@ _searchServer(DeviceInfo deviceInfo, ValueNotifier<Set<Socket>> socketStream) as
     }
   }
 
-  socketStream.addListener(manageSocket);
-  manageSocket();
+  socketStream.listen(manageSocket);
 
   while (true) {
     await Future.delayed(SEARCH_INTERVAL);
@@ -80,31 +85,37 @@ _searchServer(DeviceInfo deviceInfo, ValueNotifier<Set<Socket>> socketStream) as
   }
 }
 
-_handleServerConnections(RawDatagramSocket udpSocket, ValueNotifier<Set<Socket>> socketStream) {
+_handleServerConnections(RawDatagramSocket udpSocket, BehaviorSubject<List<Socket>> socketStream) {
   udpSocket.listen((event) async {
     if (event != RawSocketEvent.read) return;
     final datagram = udpSocket.receive()!;
     final serverMessage = decodeServerInfoMessage(datagram.data);
-    if (socketStream.value.isNotEmpty) return;
-    final socket = await Socket.connect(serverMessage.address, serverMessage.port);
+    for (final address in serverMessage.addresses) {
+      try {
+        if (socketStream.value.isNotEmpty) return;
+        final socket = await Socket.connect(address, serverMessage.port);
 
-    if (socketStream.value.isNotEmpty) {
-      socket.close();
-      return;
+        if (socketStream.value.isNotEmpty) {
+          socket.close();
+          return;
+        }
+
+        final list = socketStream.value.toList();
+        _removeSocketOnClose(socket, socketStream);
+        list.add(socket);
+        socketStream.value = list;
+      } catch (e) {
+        print(e);
+      }
     }
-
-    final list = socketStream.value.toSet();
-    _removeSocketOnClose(socket, socketStream);
-    list.add(socket);
-    socketStream.value = list;
   });
 }
 
-_removeSocketOnClose(Socket socket, ValueNotifier<Set<Socket>> socketStream) async {
+_removeSocketOnClose(Socket socket, BehaviorSubject<List<Socket>> socketStream) async {
   try {
     await socket.done;
   } finally {
-    final list = socketStream.value.toSet();
+    final list = socketStream.value.toList();
     list.remove(socket);
     socketStream.value = list;
   }

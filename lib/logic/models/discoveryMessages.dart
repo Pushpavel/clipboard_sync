@@ -6,25 +6,29 @@ import 'package:clipboard_sync/logic/models/messages.dart';
 
 class ServerInfoMessage {
   final int port;
-  final InternetAddress address;
+  final List<InternetAddress> addresses;
 
-  ServerInfoMessage(this.port, this.address);
+  ServerInfoMessage(this.port, this.addresses);
 }
 
 Future<List<int>> encodeServerInfoMessage(ServerSocket serverSocket) async {
   final l = await NetworkInterface.list(type: InternetAddressType.IPv4);
-  final address = l.firstWhere((element) => element.addresses[0].address.startsWith("192.168."));
+  final addresses = l
+      .where((element) => !element.addresses[0].address.startsWith("127.0."))
+      .map((e) => e.addresses[0].address)
+      .toList();
   final json = {
     "type": "ServerInfoMessage",
     "port": serverSocket.port,
-    "address": address.addresses[0].address,
+    "addresses": addresses,
   };
   return utf8.encode(jsonEncode(json));
 }
 
 ServerInfoMessage decodeServerInfoMessage(List<int> bytes) {
   final json = getJsonMessage("ServerInfoMessage", bytes);
-  return ServerInfoMessage(json['port'], InternetAddress(json['address']));
+  final addresses = json['addresses'] as List<dynamic>;
+  return ServerInfoMessage(json['port'], addresses.map((e) => InternetAddress(e)).toList());
 }
 
 List<int> encodeDeviceId(String id) {
