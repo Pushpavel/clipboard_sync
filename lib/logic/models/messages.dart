@@ -1,6 +1,4 @@
-import 'dart:io';
-
-import 'package:clipboard_sync/logic/models/Info.dart';
+import 'dart:convert';
 
 class ClipboardMessage {
   final String originId;
@@ -10,9 +8,11 @@ class ClipboardMessage {
   ClipboardMessage(this.originId, this.originName, this.value);
 }
 
-class ServerInfoMessage {
-  final DeviceInfo deviceInfo;
-  final ServerSocket serverSocket;
+getJsonMessage(String type, List<int> bytes) {
+  final jsonString = String.fromCharCodes(bytes).trim();
+  final json = jsonDecode(jsonString);
 
-  ServerInfoMessage(this.deviceInfo, this.serverSocket);
+  if (json.type != type) throw Exception("unexpected json type, ${json.type} expected: $type");
+
+  return json;
 }
