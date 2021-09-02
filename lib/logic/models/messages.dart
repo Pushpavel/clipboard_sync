@@ -12,7 +12,7 @@ getJsonMessage(String type, List<int> bytes) {
   final jsonString = String.fromCharCodes(bytes).trim();
   final json = jsonDecode(jsonString);
 
-  if (json.type != type) throw Exception("unexpected json type, ${json.type} expected: $type");
+  if (json['type'] != type) throw Exception("unexpected json type, ${json.type} expected: $type");
 
   return json;
 }

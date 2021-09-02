@@ -11,11 +11,13 @@ class ServerInfoMessage {
   ServerInfoMessage(this.port, this.address);
 }
 
-List<int> encodeServerInfoMessage(ServerSocket serverSocket) {
+Future<List<int>> encodeServerInfoMessage(ServerSocket serverSocket) async {
+  final l = await NetworkInterface.list(type: InternetAddressType.IPv4);
+  final address = l.firstWhere((element) => element.addresses[0].address.startsWith("192.168."));
   final json = {
     "type": "ServerInfoMessage",
     "port": serverSocket.port,
-    "address": serverSocket.address.address,
+    "address": address.addresses[0].address,
   };
   return utf8.encode(jsonEncode(json));
 }
