@@ -13,6 +13,8 @@ class App extends HookWidget {
     useEffect(() => () => socketStream.value.forEach((element) => element.close()), []);
     useEffect(() => () => socketStream.close(), []);
 
+    final control = useTextEditingController();
+
     return Scaffold(
       body: Center(
         child: StreamBuilder<List<Socket>>(
@@ -21,10 +23,28 @@ class App extends HookWidget {
           builder: (BuildContext context, AsyncSnapshot<List<Socket>> snapshot) {
             if (!snapshot.hasData || snapshot.requireData.isEmpty) return Loader();
 
-            return Wrap(
-              alignment: WrapAlignment.center,
-              direction: Axis.vertical,
+            return Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
+                Padding(
+                  padding: EdgeInsets.all(32),
+                  child: TextField(
+                    controller: control,
+                    maxLines: 8,
+                    decoration: InputDecoration(
+                      hintText: "Playground",
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(5.0),
+                        borderSide: BorderSide(
+                          color: Colors.amber,
+                          style: BorderStyle.solid,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(height: 24),
                 Wrap(
                   children: [
                     Icon(Icons.check),
