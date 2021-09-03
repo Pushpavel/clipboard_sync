@@ -15,8 +15,7 @@ handleClient(Socket socket) async {
 
   socket.listen((event) {
     pause = true;
-    final value = String.fromCharCodes(event);
-    final clipboardValue = decodeClipboardValue(value);
+    final clipboardValue = decodeClipboardValue(event);
     if (clipboard.value.value != clipboardValue.value &&
         clipboardValue.timestamp.compareTo(clipboardValue.timestamp) >= 0) {
       clipboard.value = clipboardValue;

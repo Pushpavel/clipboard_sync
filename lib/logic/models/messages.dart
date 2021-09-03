@@ -17,8 +17,8 @@ String encodeClipboardValue(ClipboardValue value) {
   return jsonEncode(json);
 }
 
-ClipboardValue decodeClipboardValue(String jsonString) {
-  final json = getJsonMessage("ClipboardValue", utf8.encode(jsonString));
+ClipboardValue decodeClipboardValue(List<int> bytes) {
+  final json = getJsonMessage("ClipboardValue", bytes);
   return ClipboardValue(json['value'], DateTime.fromMillisecondsSinceEpoch(json['timestamp']));
 }
 
