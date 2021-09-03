@@ -59,7 +59,7 @@ class App extends HookWidget {
                   ],
                 ),
                 SizedBox(height: 18),
-                ...snapshot.requireData.map((e) => Text(e.address.address)),
+                Text("Neighbour Devices: " + snapshot.requireData.length.toString()),
               ],
             );
           },

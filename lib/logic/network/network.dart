@@ -11,7 +11,7 @@ const SERVER_PORT = 10542;
 const SEARCH_PORT = 38899;
 const SEARCH_SOURCE_PORT = 40000;
 const SEARCH_INTERVAL = const Duration(seconds: 1);
-const BROADCAST_ADDRESS = "255.255.255.255";
+const BROADCAST_ADDRESS = "192.168.255.255";
 
 BehaviorSubject<List<Socket>> initializeNetwork() {
   final socketStream = BehaviorSubject<List<Socket>>.seeded([]);
@@ -29,7 +29,7 @@ _initializeNetwork(BehaviorSubject<List<Socket>> socketStream) async {
     list.add(socket);
     socketStream.value = list;
     _removeSocketOnClose(socket, socketStream);
-    handleClient(socket);
+    handleClient(socketStream, socket);
   });
 
   _handleServerSearchers(deviceInfo, serverSocket);
@@ -105,7 +105,7 @@ _handleServerConnections(RawDatagramSocket udpSocket, BehaviorSubject<List<Socke
         _removeSocketOnClose(socket, socketStream);
         list.add(socket);
         socketStream.value = list;
-        handleClient(socket);
+        handleClient(socketStream, socket);
       } catch (e) {
         print(e);
       }
