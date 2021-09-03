@@ -1,6 +1,7 @@
 # clipboard_sync
 
-A new Flutter project.
+A flutter app that syncs clipboards between devices in the same LAN using Interprocess
+ communication (Sockets).
 
 ## Getting Started
 
